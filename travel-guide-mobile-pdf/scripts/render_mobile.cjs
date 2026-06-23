@@ -13,8 +13,8 @@ const path = require('path'), fs = require('fs');
 
   await page.pdf({
     path: process.argv[3],
-    width: '300pt',
-    height: '667.5pt',
+    width: '400px',                        // = 300pt（96dpi：pt×4/3），Playwright page.pdf 不收 pt 单位
+    height: '890px',                       // = 667.5pt，物理尺寸等价，9:20
     printBackground: true,
     preferCSSPageSize: false,
     displayHeaderFooter: false,            // 满版编辑风：不注入页眉页脚，避免与满版色块冲突
