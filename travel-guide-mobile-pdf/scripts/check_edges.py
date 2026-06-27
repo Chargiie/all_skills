@@ -79,11 +79,12 @@ def main():
     ap.add_argument("--dpi", type=int, default=96)
     ap.add_argument("--expect-pages", type=int, default=None,
                    help="设计页数（.page 段数）。物理页数 != 此值 = FAIL")
-    # 留白阈值
-    ap.add_argument("--max-bottom", type=float, default=10.0, help="非尾页页底留白上限(%)")
-    ap.add_argument("--max-tail", type=float, default=15.0, help="尾页页底留白上限(%)")
-    ap.add_argument("--max-top", type=float, default=10.0, help="非尾页页顶留白上限(%)")
-    ap.add_argument("--max-tail-top", type=float, default=15.0, help="尾页页顶留白上限(%)")
+    # 留白阈值（默认偏宽：居中设计的"明信片风"留白 ≥15% 也常见；
+    # 真正要严卡的是"居中差"——top ≈ bottom。绝对阈值是 sanity check 不是主闸。）
+    ap.add_argument("--max-bottom", type=float, default=20.0, help="非尾页页底留白上限(%)")
+    ap.add_argument("--max-tail", type=float, default=25.0, help="尾页页底留白上限(%)")
+    ap.add_argument("--max-top", type=float, default=20.0, help="非尾页页顶留白上限(%)")
+    ap.add_argument("--max-tail-top", type=float, default=25.0, help="尾页页顶留白上限(%)")
     # 居中阈值
     ap.add_argument("--max-center-delta", type=float, default=5.0,
                    help="页顶 vs 页底留白差(%)上限；超过 = 未居中")

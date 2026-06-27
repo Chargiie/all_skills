@@ -85,14 +85,16 @@ NODE_PATH=<装了 playwright 的 node_modules> node scripts/render_mobile.cjs so
 
 ## 页边距 + 居中硬闸（scripts/check_edges.py）
 把验证门的「留白不过量」+「未居中」+「贴边」从主观目测变成**硬数字**：
-- **页底留白%**（非尾页 ≤10% / 尾页 ≤15%，封面默认跳过）
-- **顶部 vs 底部留白**差 ≤5%（居中）
+- **页顶 / 页底留白%**（基于行内自身均匀度，不依赖全局背景色）；默认非尾页 ≤20% / 尾页 ≤25%（居中设计的"明信片风"留白 ≥15% 也常见，**绝对阈值是 sanity check 不是主闸**）
+- **居中差**（top - bottom 绝对值）：默认 ≤5%；**这才是硬闸**——top ≈ bottom 才算"居中"，不管留白多少
 - **左右边距**到内容边距离 ≥8px（不贴边）
 - 失败 → `exit 1` + 指明页号 + 现象
 
 ```bash
 python3 scripts/check_edges.py out.pdf --expect-pages <设计页数>  # 页数 != 设计 → FAIL
-python3 scripts/check_edges.py out.pdf --max-bottom 12 --max-center-delta 8 --min-edge 10
+python3 scripts/check_edges.py out.pdf --max-bottom 10 --max-top 10 --max-center-delta 3 --min-edge 12
+# 想要"满版"严卡（不留呼吸感）：把 --max-top/--max-bottom 调到 10
+# 想要"超宽松明信片风"：调到 30
 ```
 
 **它只管页边距 + 居中 + 贴边；孤立标题 / 破图 / 卡片切断测不到，仍须逐页看图。**
