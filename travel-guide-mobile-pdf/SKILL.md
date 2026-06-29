@@ -26,6 +26,15 @@ description: >-
 
 两者**不互斥**：一份文档可以混用——比如封面用 `.screen`（满版图），其余内容用 `.page`（自然流动）。renderer 两种都校验。
 
+> **⚠️ 严禁全部用 `.screen`！** 实测踩坑：模型容易把所有页都设为 `.screen`（固定高度 890px），导致内容反复溢出 → 被迫多轮压缩字号/间距 → 最终产物字小、拥挤、可读性差。**正确做法：封面 1 张 `.screen`，其余全部用 `.page`。** `.page` 用 `min-height` + `flex center` 居中，内容自然流动，不会溢出裁切，排版松弛。
+>
+> **决策规则（if-then）**：
+> - if 这页是满版封面图 → `.screen`
+> - if 这页是独立分享卡（截图发出去要独立成立）→ `.screen`
+> - **else → `.page`**（这是 90%+ 的情况）
+>
+> **绝不要因为"想让每页正好一屏"就全选 `.screen`**——`.page` + `min-height:890px` + `flex center` 本身就能实现一段一页 + 居中，而且允许内容自然撑开，不会静默裁切。
+
 ## When to use
 - 旅游攻略 / citywalk / 周末出游 / 多日行程，出口是**手机**、要 **PDF 或可分享卡片**
 - **不适用**：纯文本回答、桌面 A4 报告、数据驱动可复现文档（那走 reportlab）
@@ -63,6 +72,10 @@ HTML → Chromium(Playwright) → PDF。强视觉攻略用 HTML+Chrome 最顺手
 **内容真实**
 - **链接必须真可点**：地图 / 订房 / 参考用真实 `<a href>`（渲染成 PDF `/Link`），**禁假链接 div**。
 - **图片真实可达**：配图只用**验证过能打开**的 URL，别凭记忆编文件名（实测：编造的 Wikimedia 文件名全 404 留白）。Wikimedia 走 Commons API 搜真实文件名 → `imageinfo` 取 `thumburl`；任意图床嵌入前 `curl -sI <url>` 确认 200。**宁可少图 / 用内联 SVG，不留 404 空块**。
+- **图片降级方案（图源全失败时）**：如果 Wikimedia 403/400、Unsplash 404、所有可用图源均不可达，**严禁使用 picsum.photos / placeholder.com 等占位图服务**（随机图片和目的地无关，视觉效果比无图更差）。降级顺序：
+  1. **减少图片数量**：只保留 1–2 张 hero 图，其余页不放图，用文字 + 排版撑视觉。
+  2. **CSS 纯视觉替代**：用 `linear-gradient` / `radial-gradient` 做色块装饰、用 CSS pattern（条纹/圆点/波浪）做背景纹理、用 emoji / 内联 SVG 图标代替照片。
+  3. **绝不留空白图框**：如果 `<img>` 404 会导致空白矩形，必须删掉该 `<img>` 或换成 CSS 方案。
 - **`<img>` 别乱加 `crossorigin="anonymous"`**（实测踩坑）：除非要 canvas 读像素，**一律不要加**。它会把图片改成 CORS 请求，而很多图床（amap `aos-comment.amap.com` / `store.is.autonavi.com`、部分 Wikimedia 镜像）**不返回 `Access-Control-Allow-Origin` 头 → CORS 失败 → 静默破图**。**`curl -sI` 仍是 200（CORS 是浏览器层，curl 查不到）**——所以「curl 200」是必要不充分，**图片是否真显示最终以渲染后逐页看图为准**。
 - **唤端链接用 web URI**（PDF 链接点击最稳）：地图 / 导航 / 订房用 **`https://uri.amap.com/...`** web URI；**别用** `amapuri://...` 唤端 scheme——PDF 阅读器未必识别，点不动还以为是死链。
 
