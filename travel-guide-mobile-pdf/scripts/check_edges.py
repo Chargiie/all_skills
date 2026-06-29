@@ -34,8 +34,13 @@ def render_pdf_to_pngs(pdf_path, dpi, outdir):
     return pngs
 
 
-def row_is_blank(row, tol=8, row_match=0.985):
-    """行内自身均匀度判空白：≥row_match 的像素落在该行中位色 tol 邻域内。"""
+def row_is_blank(row, tol=5, row_match=0.985):
+    """行内自身均匀度判空白：≥row_match 的像素落在该行中位色 tol 邻域内。
+
+    tol 默认 5（而非 8）——CJK 小字号文本经 anti-aliasing 后像素差值仅 5–10，
+    tol=8 会把这些行误判为空白。降到 5 可捕捉 ≥10px CJK 字。
+    如果产物仍误报空白（极小字号 <9px），可手动传 tol=3。
+    """
     med = np.median(row, axis=0)
     diff = np.abs(row - med).max(axis=1)
     frac = float((diff <= tol).mean())
