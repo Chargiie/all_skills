@@ -45,14 +45,14 @@ HTML → Chromium(Playwright) → PDF。强视觉攻略用 HTML+Chrome 最顺手
 
 ## 工作流程
 1. **需求拆解**：人数 / 天数 / 出发地 / 预算 / 节奏 / 必去点 / 硬性要求（如「两套路线」「机酒价」）。
-2. **信息核查**：分工——**「在哪、怎么走、天气」问 amap，「多少钱、好不好」问 web_search**。
+2. **信息核查**：分工——**「在哪、怎么走、天气」问 amap，「多少钱、好不好」问 step-search**。
    - **位置类（amap）**：`maps_text_search` 验真实店名 + 地址（防编造）→ `maps_search_detail`（用 POI `id`）取坐标 / 评分 / 营业时间 / 人均。
-   - **价格 / 订房 / 口碑（web_search）**：amap 这块弱，仍 `web_search`，**禁编造**；无 live 价标「估算 + 时间」。
+   - **价格 / 订房 / 口碑（step-search）**：amap 这块弱，走 **step-search skill**（`python3 <step-search skill 目录>/scripts/stepsearch.py "query"`，需 env `STEPFUN_API_KEY`），**禁编造**；无 live 价标「估算 + 时间」。
    - 配图同理——只用**验证过能打开**的 URL（见机械契约「图片真实可达」）。
 3. **排点 / 通勤 / 天气（amap）**：
    - 相邻点 `maps_direction_walking`（citywalk 必备）、跨区 `maps_direction_transit_integrated` / `maps_direction_driving` 出真实「距离 + 时长」；`maps_distance` 批量测距判断「这天塞不塞得下」、给点位排序。**写进攻略的通勤数字必须来自这些调用。**
    - `maps_weather` 查目标城市预报 → 攻略开头给室内外 / 带伞 / 穿衣建议，必要时据此调路线。
-   - amap 调不通时降级 `web_search` 并标「估」，**绝不编造坐标 / 距离**（见下「地图数据」）。
+   - amap 调不通时降级 step-search 并标「估」，**绝不编造坐标 / 距离**（见下「地图数据」）。
 4. **分页（先定页数）**：先决定**这份攻略分几页、每页放哪个小标题 + 哪些内容块**。`.page` 走自然分页（内容不够高就居中），`.screen` 必须 1 卡 = 1 页。**先把页数定下来再写 HTML，别一上来就写满**。
 5. **每页定密度档 + 适配排版**：估这页内容量 → 挑密度档，按档调字号 / 行距 / 间距 / 布局：
    - **稀疏**（封面 / 章节卡 / 单点 hero）：少元素 → 大字、大留白、居中焦点、一个视觉主角。
@@ -99,8 +99,8 @@ HTML → Chromium(Playwright) → PDF。强视觉攻略用 HTML+Chrome 最顺手
 ## 地图数据（amap MCP）
 真实地点 / 坐标 / 路线 / 通勤 / 天气走 **amap MCP skill**（`mcp__amap__maps_*` 工具）。编排纪律：
 - **坐标先行**：要算路线 / 测距前先拿 `经度,纬度`。规范**地址** → `maps_geo`；**POI / 店名 / 景点** → `maps_text_search` 拿 `id`（不返回坐标）→ `maps_search_detail` 取 `location`。**别手填猜的坐标**。
-- **分工**：位置 / 路线 / 天气问 amap；价格 / 订房 / 口碑问 `web_search`。
-- **失败兜底**：调用报错（如 `ENGINE_RESPONSE_DATA_ERROR`）→ POI 改 `text_search`、补全必填参数重试；仍不行 `web_search` 兜底并标「估」，**不要编造坐标 / 距离**。
+- **分工**：位置 / 路线 / 天气问 amap；价格 / 订房 / 口碑问 **step-search**（`scripts/stepsearch.py`，需 `STEPFUN_API_KEY`）。
+- **失败兜底**：调用报错（如 `ENGINE_RESPONSE_DATA_ERROR`）→ POI 改 `text_search`、补全必填参数重试；仍不行 step-search 兜底并标「估」，**不要编造坐标 / 距离**。
 - **链接**：用高德 web URI（见机械契约「唤端链接用 web URI」），不用 `amapuri://` 唤端 scheme。
 - **未注册兜底**：运行环境没把 amap MCP 工具暴露给模型时，走 amap skill 的同名兜底脚本——`python3 <amap-mcp skill 目录>/scripts/mcp_call.py <工具名> '<json 参数>'`（key 解析：`AMAP_MCP_KEY` 环境变量 → `scripts/key.txt`）。
 

@@ -71,7 +71,7 @@ description: >-
   - **POI/店名/景点** → `maps_text_search` 拿 `id`(它**不返回坐标**)→ `maps_search_detail` 用 `id` 取 `location`。
 - **地址 vs POI**:门牌/行政区用 `maps_geo`(POI 喂 geo 易报 `ENGINE_RESPONSE_DATA_ERROR`);店名/景点名用 `maps_text_search`。
 - **返回是高德原始 JSON**:`maps_weather`/`geo`/`search`/`direction` 等返回结构化 JSON,需解析后用自然语言回答或写进产物;工具级失败时 MCP 会返回形如 `API 调用失败：INVALID_PARAMS / ENGINE_RESPONSE_DATA_ERROR` 的文本。
-- **失败兜底**:某次调用报错或超时 → 换工具(POI 改 `text_search`)、补全必填参数后重试;仍不行就 `web_search` 兜底并标注,不要编造坐标/距离。
+- **失败兜底**:某次调用报错或超时 → 换工具(POI 改 `text_search`)、补全必填参数后重试;仍不行就 step-search 兜底并标注,不要编造坐标/距离。
 - **唤端工具不产数据**:`maps_schema_*` 返回的是高德 App 跳转 URI(`amapuri://…`),用于"在高德里打开/导航/打车",不要当数据源。
   - 返回的 URI **原样完整展示给用户,禁止任何加工/截断**(MCP 本身也这么要求)。
   - `maps_schema_personal_map` 的 `lineList` 每个点位**必须含 `poiId`**(来自 `text_search`/`around_search`),只给 name/lon/lat 会报 `poiId不能为空`。
