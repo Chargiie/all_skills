@@ -41,20 +41,28 @@ description: >-
 
 ## 技术栈
 HTML → Chromium(Playwright) → PDF。强视觉攻略用 HTML+Chrome 最顺手；**不要**走 LaTeX/reportlab。
+**地点 / 路线 / 通勤 / 天气**这类真实数据走 **amap MCP skill**（见下「地图数据」），别凭记忆编坐标和距离。
 
 ## 工作流程
 1. **需求拆解**：人数 / 天数 / 出发地 / 预算 / 节奏 / 必去点 / 硬性要求（如「两套路线」「机酒价」）。
-2. **信息核查**：`web_search` 查真实店名 / 民宿 / 景点 / 价格区间，**禁编造**；无 live 价标「估算 + 时间」。配图同理——只用**验证过能打开**的 URL（见机械契约「图片真实可达」）。
-3. **分页（先定页数）**：先决定**这份攻略分几页、每页放哪个小标题 + 哪些内容块**。`.page` 走自然分页（内容不够高就居中），`.screen` 必须 1 卡 = 1 页。**先把页数定下来再写 HTML，别一上来就写满**。
-4. **每页定密度档 + 适配排版**：估这页内容量 → 挑密度档，按档调字号 / 行距 / 间距 / 布局：
+2. **信息核查**：分工——**「在哪、怎么走、天气」问 amap，「多少钱、好不好」问 web_search**。
+   - **位置类（amap）**：`maps_text_search` 验真实店名 + 地址（防编造）→ `maps_search_detail`（用 POI `id`）取坐标 / 评分 / 营业时间 / 人均。
+   - **价格 / 订房 / 口碑（web_search）**：amap 这块弱，仍 `web_search`，**禁编造**；无 live 价标「估算 + 时间」。
+   - 配图同理——只用**验证过能打开**的 URL（见机械契约「图片真实可达」）。
+3. **排点 / 通勤 / 天气（amap）**：
+   - 相邻点 `maps_direction_walking`（citywalk 必备）、跨区 `maps_direction_transit_integrated` / `maps_direction_driving` 出真实「距离 + 时长」；`maps_distance` 批量测距判断「这天塞不塞得下」、给点位排序。**写进攻略的通勤数字必须来自这些调用。**
+   - `maps_weather` 查目标城市预报 → 攻略开头给室内外 / 带伞 / 穿衣建议，必要时据此调路线。
+   - amap 调不通时降级 `web_search` 并标「估」，**绝不编造坐标 / 距离**（见下「地图数据」）。
+4. **分页（先定页数）**：先决定**这份攻略分几页、每页放哪个小标题 + 哪些内容块**。`.page` 走自然分页（内容不够高就居中），`.screen` 必须 1 卡 = 1 页。**先把页数定下来再写 HTML，别一上来就写满**。
+5. **每页定密度档 + 适配排版**：估这页内容量 → 挑密度档，按档调字号 / 行距 / 间距 / 布局：
    - **稀疏**（封面 / 章节卡 / 单点 hero）：少元素 → 大字、大留白、居中焦点、一个视觉主角。
    - **均衡**（标准点位卡 / 2–3 块）：中字号、舒适间距、卡片化。
    - **密集**（路线时间轴 / 长清单 / 对照表）：紧凑字号行距（但守可读下限）、小间距、必要时分栏。
    - **同一页内容多就上密集档、少就上稀疏档——参数跟着内容量走，别一套参数套全程。**
-5. **写 HTML**：每段一个 `<section class="page">`（默认）。需要硬卡（满版封面 / 独立可分享单卡）才改用 `<section class="screen">`。renderer 靠类名做护栏，**务必用 `.page` 或 `.screen` 这两个类名之一**，别用别的。
-6. **渲染 PDF**：`node scripts/render_mobile.cjs source.html out.pdf`（需 `NODE_PATH` 指向装了 playwright 的 node_modules）。读它输出的**逐页报告**。
-7. **自检 → 重修闭环（不过不交付）**：跑 `python3 scripts/check_edges.py out.pdf --expect-pages <设计页数>` 测页边距 + 居中；再 `pdftoppm -r 96 -png out.pdf /tmp/pg` **逐页 Read 看图**核对脚本测不到的（孤立标题、破图、卡片切断、贴边）。**任一不过 → 写清哪页哪元素什么问题 → 改 HTML → 重渲染 → 重跑。循环到全过。**
-8. **交付（必须附自检证据，否则不算完成）**：**逐页列证据表**——每页：`check_edges` 留白% / 居中 / 贴边 / 有无孤立标题/破图/切断。**没有这张表 = 没做自检 = 不准交付**。
+6. **写 HTML**：每段一个 `<section class="page">`（默认）。需要硬卡（满版封面 / 独立可分享单卡）才改用 `<section class="screen">`。renderer 靠类名做护栏，**务必用 `.page` 或 `.screen` 这两个类名之一**，别用别的。
+7. **渲染 PDF**：`node scripts/render_mobile.cjs source.html out.pdf`（需 `NODE_PATH` 指向装了 playwright 的 node_modules）。读它输出的**逐页报告**。
+8. **自检 → 重修闭环（不过不交付）**：跑 `python3 scripts/check_edges.py out.pdf --expect-pages <设计页数>` 测页边距 + 居中；再 `pdftoppm -r 96 -png out.pdf /tmp/pg` **逐页 Read 看图**核对脚本测不到的（孤立标题、破图、卡片切断、贴边）。**任一不过 → 写清哪页哪元素什么问题 → 改 HTML → 重渲染 → 重跑。循环到全过。**
+9. **交付（必须附自检证据，否则不算完成）**：**逐页列证据表**——每页：`check_edges` 留白% / 居中 / 贴边 / 有无孤立标题/破图/切断。**没有这张表 = 没做自检 = 不准交付**。
 
 ## 机械契约（渲染正确性，非样式偏好）
 不照做会出坏产物，和审美无关，必须遵守：
@@ -78,11 +86,23 @@ HTML → Chromium(Playwright) → PDF。强视觉攻略用 HTML+Chrome 最顺手
   3. **绝不留空白图框**：如果 `<img>` 404 会导致空白矩形，必须删掉该 `<img>` 或换成 CSS 方案。
 - **`<img>` 别乱加 `crossorigin="anonymous"`**（实测踩坑）：除非要 canvas 读像素，**一律不要加**。它会把图片改成 CORS 请求，而很多图床（amap `aos-comment.amap.com` / `store.is.autonavi.com`、部分 Wikimedia 镜像）**不返回 `Access-Control-Allow-Origin` 头 → CORS 失败 → 静默破图**。**`curl -sI` 仍是 200（CORS 是浏览器层，curl 查不到）**——所以「curl 200」是必要不充分，**图片是否真显示最终以渲染后逐页看图为准**。
 - **唤端链接用 web URI**（PDF 链接点击最稳）：地图 / 导航 / 订房用 **`https://uri.amap.com/...`** web URI；**别用** `amapuri://...` 唤端 scheme——PDF 阅读器未必识别，点不动还以为是死链。
+  - 单点标注：`https://uri.amap.com/marker?position=<lng>,<lat>&name=<名称>&coordinate=gaode&src=guide`
+  - 导航到某点：`https://uri.amap.com/navigation?to=<lng>,<lat>,<名称>&mode=walk&coordinate=gaode&src=guide`（`mode` 取 `walk`/`car`/`bus`）
+  - `<lng>,<lat>` 来自 amap（`maps_geo` 或 `maps_search_detail`），名称做 URL 转义。
+- **坐标 / 距离 / 通勤真实**：攻略里的坐标、点间距离、步行 / 通勤时长**必须来自 amap 调用**（`maps_direction_*` / `maps_distance`），**禁手填猜的数字**——和「图片真实可达」同理，编的距离 = 坏产物。amap 调不通时降级为「约 X 分钟（估）」并标注，不要写成精确值。
 
 **渲染细节**
 - **CJK 字体栈 / 回退**：`-apple-system, "PingFang SC", "STSong", "Helvetica Neue", Arial, sans-serif`，回退顺序 `SC→JP→KR→Latin`（日文在前会让简体用日文字形），字型最多两种；webfont 截图前 `await document.fonts.ready`。
 - **颜色保真**：`print-color-adjust: exact` 挂 `*`（挂 body 无效）。
 - **图表少用**：攻略一般不用图表；万一用 Chart.js，必须 `animation:false` 且等渲染完再截。
+
+## 地图数据（amap MCP）
+真实地点 / 坐标 / 路线 / 通勤 / 天气走 **amap MCP skill**（`mcp__amap__maps_*` 工具）。编排纪律：
+- **坐标先行**：要算路线 / 测距前先拿 `经度,纬度`。规范**地址** → `maps_geo`；**POI / 店名 / 景点** → `maps_text_search` 拿 `id`（不返回坐标）→ `maps_search_detail` 取 `location`。**别手填猜的坐标**。
+- **分工**：位置 / 路线 / 天气问 amap；价格 / 订房 / 口碑问 `web_search`。
+- **失败兜底**：调用报错（如 `ENGINE_RESPONSE_DATA_ERROR`）→ POI 改 `text_search`、补全必填参数重试；仍不行 `web_search` 兜底并标「估」，**不要编造坐标 / 距离**。
+- **链接**：用高德 web URI（见机械契约「唤端链接用 web URI」），不用 `amapuri://` 唤端 scheme。
+- **未注册兜底**：运行环境没把 amap MCP 工具暴露给模型时，走 amap skill 的同名兜底脚本——`python3 <amap-mcp skill 目录>/scripts/mcp_call.py <工具名> '<json 参数>'`（key 解析：`AMAP_MCP_KEY` 环境变量 → `scripts/key.txt`）。
 
 ## 渲染器（scripts/render_mobile.cjs）
 满版无白边（margin 0，留白交给 CSS），并**对 `.page` 段数 == 物理页数** + **`.screen` 卡内容高 ≤ 一屏**做护栏：
@@ -124,6 +144,8 @@ python3 scripts/check_edges.py out.pdf --max-bottom 10 --max-top 10 --max-center
 | `.screen` 填充合理 | 渲染报告 `fill` + 看图 | 各卡 ≥55%；<55% 确认是有意 hero 否则补 | 加大字号 / 补内容 / 合并卡 |
 | 图片未丢 | `pdfimages -list out.pdf \| tail -n +3 \| wc -l` | ≥ 预期数（404/CORS 失败都会漏图） | 换**验证过 200 + CORS 干净**的图 URL；破图必换 |
 | 链接可点 | `pypdf` 数 `/Link` + spot-click ≥3 | 命中、能跳转；**不含 `amapuri://` 唤端 scheme** | 补真实 `<a href>`；唤端链接换 web URI |
+| 距离/通勤真实 | 核对行程里的距离 / 时长 | 来自 amap `direction_*` / `distance`，非手填猜值；调不通处已标「估」 | 补 amap 调用或标「估」 |
+| 地图链接可开 | spot-check `uri.amap.com` 链接 | 浏览器能打开、落点正确；无 `amapuri://` 唤端 scheme | 换高德 web URI |
 | 文字可读 | `pdftotext -layout` | 无乱码、无残留占位符 | 修字体栈 / 占位符 |
 | 翻页连续 | 看图 | 背景跨页连续、无白条断裂 | 背景铺 `html, body` |
 | 块不被切断 | 看图 | 卡片 / 行程项 / 标题都不跨页断裂；标题不孤立页底 | 叶子卡片 `break-inside:avoid` + 标题 `break-after:avoid`（兜底） |
